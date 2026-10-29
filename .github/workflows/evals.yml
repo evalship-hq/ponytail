@@ -1,0 +1,72 @@
+name: evals
+
+# Runs the promptfoo suites in benchmarks/ on every pull request and push to main, and uploads their
+# results for evalship (https://evalship.com), which compares each pull request with main.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  evals:
+    # Pull requests from forks and Dependabot don't get the key and would fail every eval.
+    if: github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.login != 'dependabot[bot]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # 3 probes x 2 arms on Opus, repeated because they sample at temperature 1 (the yaml suggests --repeat 10).
+          - suite: behavior
+            config: behavior.yaml
+            flags: --repeat 3
+          # 5 tasks x 3 arms x 3 models: the correctness gate and the code-size measurement.
+          - suite: single-shot
+            config: promptfooconfig.yaml
+            flags: ""
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+
+      - name: Install Python deps for correctness checks
+        run: pip install pandas
+
+      # CI reaches the same Anthropic models through OpenRouter: a copy of the config with only the provider ids
+      # mapped (claude-opus-4-8 -> anthropic/claude-opus-4.8), next to it so its file:// paths still resolve.
+      - name: Route the config's models through OpenRouter
+        working-directory: benchmarks
+        run: |
+          sed -E 's#anthropic:messages:claude-([a-z]+)-([0-9]+)-([0-9]+)(-[0-9]{8})?#openrouter:anthropic/claude-\1-\2.\3#' ${{ matrix.config }} > ci-${{ matrix.config }}
+          diff ${{ matrix.config }} ci-${{ matrix.config }} || true
+
+      - name: Run ${{ matrix.suite }} evals
+        # Failing evals don't fail the job: evalship's check compares them with main and sets flaky ones aside.
+        continue-on-error: true
+        working-directory: benchmarks
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          PROMPTFOO_DISABLE_TELEMETRY: '1'
+          PROMPTFOO_DISABLE_UPDATE: '1'
+        run: npx --yes promptfoo@0.125.1 eval -c ci-${{ matrix.config }} ${{ matrix.flags }} --no-cache --max-concurrency 8 -o ../eval-results.json
+
+      # continue-on-error above would also hide promptfoo crashing before it wrote results, leaving evalship nothing.
+      - name: Check promptfoo wrote results
+        run: test -s eval-results.json || { echo "::error::promptfoo wrote no eval-results.json"; exit 1; }
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: evalship-results-${{ matrix.suite }}
+          path: eval-results.json

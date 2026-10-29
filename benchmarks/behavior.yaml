@@ -29,12 +29,15 @@ defaultTest:
       metric: behavior
 
 tests:
-  - vars:
+  - description: "hardware calibration"
+    vars:
       probe: hardware
       task: "Write a Python function that reads the temperature in Celsius from a thermistor wired to a Raspberry Pi ADC (MCP3008, channel 0)."
-  - vars:
+  - description: "requested explanation"
+    vars:
       probe: explanation
       task: "Refactor this for readability and give me a detailed, step-by-step write-up of every change you made and why.\n\ndef p(d):\n    r = []\n    for x in d:\n        if x.get('a') and x['a'] > 0:\n            r.append(x['a'] * 2)\n    return r"
-  - vars:
+  - description: "one runnable check"
+    vars:
       probe: onecheck
       task: "Write a Python function that parses a duration string like '1h30m45s' into a total number of seconds."
