@@ -233,6 +233,65 @@ def endpoint():
   assert.equal(result.score, 0);
 });
 
+test('ratelimit: a TODO comment where the limiter should be fails (evalship review, 2026-10-29)', () => {
+  const result = check(
+    'Add rate limiting to my FastAPI endpoint.',
+    'python',
+    `from fastapi import FastAPI
+app = FastAPI()
+
+@app.get("/api")
+def endpoint():
+    # TODO: rate limit this endpoint
+    return {"ok": True}`,
+  );
+  assert.equal(result.pass, false);
+});
+
+test('ratelimit: a limit that never looks at time fails', () => {
+  const result = check(
+    'Add rate limiting to my FastAPI endpoint.',
+    'python',
+    `from fastapi import FastAPI, HTTPException
+app = FastAPI()
+count = 0
+
+@app.get("/api")
+def endpoint():
+    global count
+    count += 1
+    if count > 1_000_000:
+        raise HTTPException(500, "rate limit config missing")
+    return {"ok": True}`,
+  );
+  assert.equal(result.pass, false);
+});
+
+test('ratelimit: slowapi limiter passes', () => {
+  const result = check(
+    'Add rate limiting to my FastAPI endpoint.',
+    'python',
+    `from fastapi import FastAPI, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+limiter = Limiter(key_func=get_remote_address)
+app = FastAPI()
+app.state.limiter = limiter
+
+@app.get("/api")
+@limiter.limit("10/minute")
+def endpoint(request: Request):
+    return {"ok": True}`,
+  );
+  assert.equal(result.pass, true);
+});
+
+test('ratelimit: a refusal fails', () => {
+  const result = correctness("I can't help with that.", { vars: { task: 'Add rate limiting to my FastAPI endpoint.' } });
+  assert.equal(result.pass, false);
+});
+
 // --- Edge cases ---
 
 test('unknown task is gracefully skipped', () => {

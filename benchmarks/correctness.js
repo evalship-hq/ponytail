@@ -253,14 +253,16 @@ else:
     const code = blocks.find((b) => b.lang === 'python' || b.lang === 'py' || (!b.lang && (b.code.includes('rate') || b.code.includes('limit'))));
     if (!code) return { pass: false, reason: 'No Python code block found' };
 
-    // Structural check for rate limiting: must have some form of counter/time tracking.
-    const src = code.code;
-    const hasTimeTracking = /time\.|datetime|asyncio/.test(src);
-    const hasLimitLogic = /limit|max_requests|rate|429|Too Many|HTTPException|RateLimiter/.test(src);
+    // Structural check for rate limiting: a limiter library, or requests tracked over time and turned away with a 429.
+    // Comments are dropped: a "# TODO: rate limit" limits nothing.
+    const src = code.code.replace(/(^|\s)#.*$/gm, '$1');
+    const hasLibrary = /\bLimiter\(|\.limit\(\s*["']|RateLimiter\b|slowapi|fastapi_limiter/.test(src);
+    const hasTimeTracking = /time\.|datetime|asyncio|monotonic|\bexpire\b|\bttl\b/i.test(src);
+    const rejects = /429|Too Many|TOO_MANY_REQUESTS|HTTPException/.test(src);
     const hasFastAPI = /fastapi|FastAPI|app\s*=|@app\./.test(src);
 
     const failures = [];
-    if (!hasLimitLogic) failures.push('no rate limit logic');
+    if (!hasLibrary && !(hasTimeTracking && rejects)) failures.push('no rate limiting (a limiter, or requests counted over time and rejected with a 429)');
     if (!hasFastAPI) failures.push('no FastAPI usage');
 
     if (failures.length === 0) return { pass: true, reason: 'Rate limiter has required structure' };

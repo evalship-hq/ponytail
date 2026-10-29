@@ -43,6 +43,10 @@ jobs:
       - name: Install Python deps for correctness checks
         run: pip install pandas
 
+      # The graders' own tests, with no model calls: a check that can't tell right from wrong fails the job here.
+      - name: Test the eval checks
+        run: node --test tests/behavior.test.js tests/correctness.test.js
+
       # CI reaches the same Anthropic models through OpenRouter: a copy of the config with only the provider ids
       # mapped (claude-opus-4-8 -> anthropic/claude-opus-4.8), next to it so its file:// paths still resolve.
       - name: Route the config's models through OpenRouter

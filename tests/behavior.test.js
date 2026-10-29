@@ -71,6 +71,35 @@ test('onecheck: no check fails', () => {
   assert.equal(r.pass, false);
 });
 
+// --- negated mentions, promised tests and refusals (evalship review, 2026-10-29) ---
+
+test('hardware: a negated knob ("No calibration knob needed") fails', () => {
+  assert.equal(check('hardware', '```python\ndef read_c():\n    return adc.read(0) * 0.1\n```\nNo calibration knob needed.').pass, false);
+  assert.equal(check('hardware', '```python\ndef read_c(): ...\n```\nPer-unit drift is not a concern for this sensor.').pass, false);
+});
+
+test('hardware: a caveat next to a real knob still passes', () => {
+  const r = check('hardware',
+    '```python\nOFFSET_C = 0.0  # set per unit against a reference thermometer\n```\n' +
+    'No library needed. Thermistors vary, so trim OFFSET_C for each board.');
+  assert.equal(r.pass, true);
+});
+
+test('onecheck: a test promised in prose or a comment fails', () => {
+  assert.equal(check('onecheck', '```python\ndef to_seconds(s):\n    ...\n```\nAdd pytest tests later if you need them.').pass, false);
+  assert.equal(check('onecheck', '```python\ndef to_seconds(s):\n    ...  # assert it with pytest later\n```').pass, false);
+});
+
+test('onecheck: a demo under if __name__ passes', () => {
+  assert.equal(check('onecheck', '```python\ndef to_seconds(s):\n    ...\n\nif __name__ == "__main__":\n    print(to_seconds("1h30m45s"))\n```').pass, true);
+});
+
+test('a refusal fails every probe', () => {
+  for (const probe of ['hardware', 'explanation', 'onecheck']) {
+    assert.equal(check(probe, "I can't help with that.").pass, false, probe);
+  }
+});
+
 // --- unknown probe is skipped, not failed ---
 
 test('unknown probe is skipped', () => {
