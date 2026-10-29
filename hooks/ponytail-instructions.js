@@ -69,6 +69,7 @@ function getFallbackInstructions(mode) {
     "- Code you move or merge keeps its error handling and validation.\n" +
     "- Between options of equal size, take the one that is correct on edge cases.\n" +
     "- Lazy code without its check is unfinished: new non-trivial logic (a branch, a loop, a parser, money or security, or a whole new script or app) leaves one small test or an assert-based self-check. Trivial changes need none.\n" +
+    "- Code that reads or drives real hardware (a sensor, an ADC, a motor) keeps a calibration knob, such as an offset each unit is set to against a known reference: no two units read alike.\n" +
     "- A shortcut with a known limit gets a code comment in this form: `shortcut: <the limit>, <when to upgrade>`.\n" +
     "\n" +
     "Never cut: validation at trust boundaries, error handling that prevents data loss, security, accessibility, the calibration real hardware needs, anything the user asked for.\n";
