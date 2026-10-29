@@ -61,6 +61,10 @@ jobs:
           PROMPTFOO_DISABLE_UPDATE: '1'
         run: npx --yes promptfoo@0.125.1 eval -c ci-${{ matrix.config }} ${{ matrix.flags }} --no-cache --max-concurrency 8 -o ../eval-results.json
 
+      # continue-on-error above would also hide promptfoo crashing before it wrote results, leaving evalship nothing.
+      - name: Check promptfoo wrote results
+        run: test -s eval-results.json || { echo "::error::promptfoo wrote no eval-results.json"; exit 1; }
+
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
