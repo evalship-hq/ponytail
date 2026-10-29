@@ -26,9 +26,11 @@ prompts:
 
 defaultTest:
   assert:
+    # Recorded, not scored: fewer lines is the goal, so a line count in the score would read as worse when it drops.
     - type: javascript
       value: file://loc.js
       metric: code_loc
+      weight: 0
     - type: javascript
       value: file://correctness.js
       metric: correct
