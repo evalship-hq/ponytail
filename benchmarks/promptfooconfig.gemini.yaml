@@ -20,6 +20,7 @@ defaultTest:
     - type: javascript
       value: file://loc.js
       metric: code_loc
+      weight: 0
     - type: javascript
       value: file://correctness.js
       metric: correct
