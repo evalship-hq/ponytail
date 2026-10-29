@@ -364,6 +364,22 @@ def endpoint():
   assert.equal(result.pass, false);
 });
 
+test('ratelimit: a limit decorator with a constant passes, a query .limit() alone fails', () => {
+  const app = (route) => `from fastapi import FastAPI, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+RATE_LIMIT = "10/minute"
+limiter = Limiter(key_func=get_remote_address)
+app = FastAPI()
+
+${route}`;
+  assert.equal(check('Add rate limiting to my FastAPI endpoint.', 'python',
+    app('@app.get("/api")\n@limiter.limit(RATE_LIMIT)\ndef endpoint(request: Request):\n    return {"ok": True}')).pass, true);
+  assert.equal(check('Add rate limiting to my FastAPI endpoint.', 'python',
+    app('@app.get("/api")\ndef endpoint(request: Request):\n    return db.query(Item).limit(10).all()')).pass, false);
+});
+
 test('ratelimit: a refusal fails', () => {
   const result = correctness("I can't help with that.", { vars: { task: 'Add rate limiting to my FastAPI endpoint.' } });
   assert.equal(result.pass, false);

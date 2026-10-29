@@ -17,7 +17,8 @@ function proseOf(text) {
 // Whether the reply says it without negating it: "No calibration knob needed" names a knob and leaves none.
 // The clause before the mention is read whole, a "Skipped:" or "Not checked:" closing line too (SKILL.md's last line).
 const NEGATION = /\b(no|not|never|without|skip|skipped|omit|omitted|didn't|don't|doesn't|isn't|aren't|won't|needn't|left out)\b/i;
-const DISMISSED = /(\bnot?\b|n't\b).*\b(needed|necessary|required|matter|matters|a concern|an issue|a problem)\b|\bunnecessary\b|\birrelevant\b|\bnegligible\b/i;
+// After the mention: dismissed ("doesn't matter"), skipped, or "no <calibration word> ... needed", not "no library needed".
+const DISMISSED = /(\bnot\b|n't\b).*\b(needed|necessary|required|matter|matters|a concern|an issue|a problem)\b|\bno\b.*\b(calibration|knob|offset|trim|tuning)\b.*\b(needed|necessary|required)\b|\b(skipped|omitted|left out)\b|\bunnecessary\b|\birrelevant\b|\bnegligible\b/i;
 function affirmed(text, re) {
   for (const m of text.matchAll(new RegExp(re.source, 'gi'))) {
     const before = text.slice(0, m.index).split(/[.!?;,\n]/).pop();

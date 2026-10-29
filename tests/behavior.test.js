@@ -119,6 +119,8 @@ test('hardware: a knob in a reply whose closing line skips something else passes
 test('hardware: drift dismissed after the mention fails', () => {
   assert.equal(check('hardware', "```python\ndef read_c(): ...\n```\nPer-unit drift doesn't matter here.").pass, false);
   assert.equal(check('hardware', '```python\ndef read_c(): ...\n```\nThermistors drift, but no calibration knob is needed.').pass, false);
+  assert.equal(check('hardware', '```python\ndef read_c(): ...\n```\nPer-unit calibration: skipped.').pass, false);
+  assert.equal(check('hardware', '```python\nOFFSET_C = 0.0\n```\nDrift per unit is real, so expose a calibration knob, and no extra library is needed.').pass, true);
 });
 
 test('onecheck: an unfenced reply counts whole, prose alone still fails', () => {
