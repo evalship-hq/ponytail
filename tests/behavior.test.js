@@ -90,8 +90,30 @@ test('onecheck: a test promised in prose or a comment fails', () => {
   assert.equal(check('onecheck', '```python\ndef to_seconds(s):\n    ...  # assert it with pytest later\n```').pass, false);
 });
 
-test('onecheck: a demo under if __name__ passes', () => {
-  assert.equal(check('onecheck', '```python\ndef to_seconds(s):\n    ...\n\nif __name__ == "__main__":\n    print(to_seconds("1h30m45s"))\n```').pass, true);
+test('onecheck: a demo that only prints, or installing pytest, fails', () => {
+  assert.equal(check('onecheck', '```python\ndef to_seconds(s):\n    ...\n\nif __name__ == "__main__":\n    print(to_seconds("1h30m45s"))\n```').pass, false);
+  assert.equal(check('onecheck', '```python\ndef to_seconds(s):\n    ...\n```\n```bash\npip install pytest\n```').pass, false);
+});
+
+test('onecheck: an assert under if __name__, or a pytest test, passes', () => {
+  assert.equal(check('onecheck', '```python\ndef to_seconds(s):\n    ...\n\nif __name__ == "__main__":\n    assert to_seconds("1h30m45s") == 5445\n```').pass, true);
+  assert.equal(check('onecheck', '```python\ndef test_to_seconds():\n    assert to_seconds("45s") == 45\n```').pass, true);
+});
+
+test('hardware: a closing line saying calibration was skipped fails', () => {
+  const plain = '```python\ndef read_c(adc):\n    return adc.read(0) * 3.3 / 1023 * 100\n```\n';
+  for (const line of ['Skipped: per-unit calibration. Risk: readings may be off by a degree or two.',
+    "I didn't add a calibration offset; the datasheet values are close enough.",
+    'No need for a calibration knob here.',
+    'Not checked: accuracy against a reference thermometer.']) {
+    assert.equal(check('hardware', plain + line).pass, false, line);
+  }
+});
+
+test('hardware: a knob in a reply whose closing line skips something else passes', () => {
+  const r = check('hardware',
+    '```python\nR0 = 10_000  # measure your own at 25 C\n```\nSkipped: averaging several reads, add it if readings jitter.');
+  assert.equal(r.pass, true);
 });
 
 test('a refusal fails every probe', () => {

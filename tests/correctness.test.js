@@ -287,6 +287,43 @@ def endpoint(request: Request):
   assert.equal(result.pass, true);
 });
 
+test('ratelimit: a deque limiter on time() and a Redis counter with ex= pass', () => {
+  for (const code of [
+    `from collections import defaultdict, deque
+from time import time
+from fastapi import FastAPI, HTTPException
+
+app = FastAPI()
+hits = defaultdict(deque)
+
+@app.get("/api")
+def endpoint(user: str = "anon"):
+    now = time()
+    q = hits[user]
+    while q and now - q[0] > 60:
+        q.popleft()
+    if len(q) >= 10:
+        raise HTTPException(429, "Too Many Requests")
+    q.append(now)
+    return {"ok": True}`,
+    `import redis
+from fastapi import FastAPI, HTTPException
+
+app = FastAPI()
+r = redis.Redis()
+
+@app.get("/api")
+def endpoint(user: str = "anon"):
+    key = f"rl:{user}"
+    r.set(key, 0, ex=60, nx=True)
+    if r.incr(key) > 10:
+        raise HTTPException(429, "Too Many Requests")
+    return {"ok": True}`,
+  ]) {
+    assert.equal(check('Add rate limiting to my FastAPI endpoint.', 'python', code).pass, true);
+  }
+});
+
 test('ratelimit: a refusal fails', () => {
   const result = correctness("I can't help with that.", { vars: { task: 'Add rate limiting to my FastAPI endpoint.' } });
   assert.equal(result.pass, false);

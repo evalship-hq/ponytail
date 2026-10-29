@@ -15,11 +15,12 @@ function proseOf(text) {
 }
 
 // Whether the reply says it without negating it: "No calibration knob needed" names a knob and leaves none.
-const NEGATION = /\b(no|not|never|without|skip|don't|doesn't|isn't|aren't|won't|needn't)\b/i;
+// The clause before the mention is read whole, a "Skipped:" or "Not checked:" closing line too (SKILL.md's last line).
+const NEGATION = /\b(no|not|never|without|skip|skipped|omit|omitted|didn't|don't|doesn't|isn't|aren't|won't|needn't|left out)\b/i;
 const DISMISSED = /\b(not|isn't|aren't|n't)\b.*\b(needed|necessary|required|a concern|an issue)\b|\bunnecessary\b/i;
 function affirmed(text, re) {
   for (const m of text.matchAll(new RegExp(re.source, 'gi'))) {
-    const before = text.slice(0, m.index).split(/[.!?;:\n]/).pop().split(/\s+/).filter(Boolean).slice(-3).join(' ');
+    const before = text.slice(0, m.index).split(/[.!?;,\n]/).pop();
     const after = text.slice(m.index + m[0].length).split(/[.!?;\n]/)[0];
     if (!NEGATION.test(before) && !DISMISSED.test(after)) return true;
   }
@@ -51,9 +52,10 @@ const CHECKS = {
   onecheck(output) {
     // Only code counts: a test promised in prose or a comment ("Add pytest tests later") isn't one left behind.
     const t = (String(output || '').match(/```[\s\S]*?```/g) || []).join('\n').replace(/(^|\s)(#|\/\/).*$/gm, '$1');
-    const hasCheck = /\bassert\b|def\s+test_|if\s+__name__|unittest|pytest|console\.assert|\bexpect\(|\bdescribe\(|\bit\(/.test(t);
+    // A test or an assert, as SKILL.md asks: a demo that only prints, or `pip install pytest`, checks nothing.
+    const hasCheck = /\bassert\b|def\s+test_|unittest\.TestCase|console\.assert|\bexpect\(|\b(it|test)\(\s*['"`]|^\s*>>>\s/m.test(t);
     return hasCheck
-      ? { pass: true, reason: 'Left a runnable check (assert/test/demo).' }
+      ? { pass: true, reason: 'Left a runnable check (assert or test).' }
       : { pass: false, reason: 'No runnable check left behind.' };
   },
 };

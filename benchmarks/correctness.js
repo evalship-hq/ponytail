@@ -257,7 +257,7 @@ else:
     // Comments are dropped: a "# TODO: rate limit" limits nothing.
     const src = code.code.replace(/(^|\s)#.*$/gm, '$1');
     const hasLibrary = /\bLimiter\(|\.limit\(\s*["']|RateLimiter\b|slowapi|fastapi_limiter/.test(src);
-    const hasTimeTracking = /time\.|datetime|asyncio|monotonic|\bexpire\b|\bttl\b/i.test(src);
+    const hasTimeTracking = /time\.|\btime\(\)|datetime|asyncio|monotonic|perf_counter|\bexpire\b|\bsetex\b|\bex\s*=|\bttl\b/i.test(src);
     const rejects = /429|Too Many|TOO_MANY_REQUESTS|HTTPException/.test(src);
     const hasFastAPI = /fastapi|FastAPI|app\s*=|@app\./.test(src);
 
