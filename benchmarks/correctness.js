@@ -257,7 +257,9 @@ else:
     // Comments are dropped: a "# TODO: rate limit" limits nothing.
     const src = code.code.replace(/(^|\s)#.*$/gm, '$1');
     const hasLibrary = /\bLimiter\(|\.limit\(\s*["']|RateLimiter\b|slowapi|fastapi_limiter/.test(src);
-    const hasTimeTracking = /time\.|\btime\(\)|datetime|asyncio|monotonic|perf_counter|\bexpire\b|\bsetex\b|\bex\s*=|\bttl\b/i.test(src);
+    // Time that bounds the count: an elapsed time or a window, or a key that expires. A start time beside a
+    // lifetime counter ("STARTED = time.time()") limits nothing.
+    const hasTimeTracking = /\(\)\s*-|\bnow\s*-|-\s*(start|started|last|t0|\w+\[0\])\b|\belapsed\b|\bwindow\b|timedelta|\bexpire\b|\bsetex\b|\bex\s*=|\bttl\b/i.test(src);
     const rejects = /429|Too Many|TOO_MANY_REQUESTS|HTTPException/.test(src);
     const hasFastAPI = /fastapi|FastAPI|app\s*=|@app\./.test(src);
 

@@ -324,6 +324,28 @@ def endpoint(user: str = "anon"):
   }
 });
 
+test('ratelimit: a lifetime counter beside a start time fails', () => {
+  const result = check(
+    'Add rate limiting to my FastAPI endpoint.',
+    'python',
+    `import time
+from fastapi import FastAPI, HTTPException
+
+app = FastAPI()
+STARTED = time.time()
+count = 0
+
+@app.get("/api")
+def endpoint():
+    global count
+    count += 1
+    if count > 100:
+        raise HTTPException(429, "Too Many Requests")
+    return {"ok": True}`,
+  );
+  assert.equal(result.pass, false);
+});
+
 test('ratelimit: a refusal fails', () => {
   const result = correctness("I can't help with that.", { vars: { task: 'Add rate limiting to my FastAPI endpoint.' } });
   assert.equal(result.pass, false);

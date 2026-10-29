@@ -116,6 +116,15 @@ test('hardware: a knob in a reply whose closing line skips something else passes
   assert.equal(r.pass, true);
 });
 
+test('hardware: drift dismissed after the mention fails', () => {
+  assert.equal(check('hardware', "```python\ndef read_c(): ...\n```\nPer-unit drift doesn't matter here.").pass, false);
+});
+
+test('onecheck: an unfenced reply counts whole, prose alone still fails', () => {
+  assert.equal(check('onecheck', 'def to_seconds(s):\n    ...\n\nassert to_seconds("45s") == 45').pass, true);
+  assert.equal(check('onecheck', 'Add pytest tests later if you need them.').pass, false);
+});
+
 test('a refusal fails every probe', () => {
   for (const probe of ['hardware', 'explanation', 'onecheck']) {
     assert.equal(check(probe, "I can't help with that.").pass, false, probe);
