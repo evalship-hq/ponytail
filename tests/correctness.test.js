@@ -346,6 +346,24 @@ def endpoint():
   assert.equal(result.pass, false);
 });
 
+test('ratelimit: a slowapi limiter imported and built but never applied fails', () => {
+  const result = check(
+    'Add rate limiting to my FastAPI endpoint.',
+    'python',
+    `from fastapi import FastAPI
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+limiter = Limiter(key_func=get_remote_address)
+app = FastAPI()
+
+@app.get("/api")
+def endpoint():
+    return {"ok": True}`,
+  );
+  assert.equal(result.pass, false);
+});
+
 test('ratelimit: a refusal fails', () => {
   const result = correctness("I can't help with that.", { vars: { task: 'Add rate limiting to my FastAPI endpoint.' } });
   assert.equal(result.pass, false);
