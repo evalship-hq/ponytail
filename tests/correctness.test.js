@@ -380,6 +380,40 @@ ${route}`;
     app('@app.get("/api")\ndef endpoint(request: Request):\n    return db.query(Item).limit(10).all()')).pass, false);
 });
 
+test('ratelimit: a fixed window on time() // 60 passes, a RateLimiter built but not applied fails', () => {
+  assert.equal(check('Add rate limiting to my FastAPI endpoint.', 'python', `import time
+from collections import Counter
+from fastapi import FastAPI, HTTPException
+
+app = FastAPI()
+hits = Counter()
+
+@app.get("/api")
+def endpoint(user: str = "anon"):
+    key = (user, int(time.time() // 60))
+    hits[key] += 1
+    if hits[key] > 10:
+        raise HTTPException(429, "Too Many Requests")
+    return {"ok": True}`).pass, true);
+  assert.equal(check('Add rate limiting to my FastAPI endpoint.', 'python', `from fastapi import FastAPI
+from fastapi_limiter.depends import RateLimiter
+
+app = FastAPI()
+limiter = RateLimiter(times=10, seconds=60)
+
+@app.get("/api")
+def endpoint():
+    return {"ok": True}`).pass, false);
+  assert.equal(check('Add rate limiting to my FastAPI endpoint.', 'python', `from fastapi import Depends, FastAPI
+from fastapi_limiter.depends import RateLimiter
+
+app = FastAPI()
+
+@app.get("/api", dependencies=[Depends(RateLimiter(times=10, seconds=60))])
+def endpoint():
+    return {"ok": True}`).pass, true);
+});
+
 test('ratelimit: a refusal fails', () => {
   const result = correctness("I can't help with that.", { vars: { task: 'Add rate limiting to my FastAPI endpoint.' } });
   assert.equal(result.pass, false);
