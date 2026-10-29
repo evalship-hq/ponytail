@@ -21,6 +21,9 @@ prompts:
     label: baseline (no skill)
   - id: file://arms/ponytail.js
     label: ponytail
+  # AGENTS.md carries the same rules for agents that don't load SKILL.md; it should pass these gates too.
+  - id: file://arms/agents-md.js
+    label: ponytail (AGENTS.md)
 
 defaultTest:
   assert:

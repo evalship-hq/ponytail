@@ -21,14 +21,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # 3 probes x 2 arms on Opus, repeated because they sample at temperature 1 (the yaml suggests --repeat 10).
+          # Only ponytail's own arms: the no-skill and caveman arms don't load its rules, so no pull request here
+          # changes their results; they stay in the configs for the README's benchmark. About $0.40 a run, not $1.10.
+          # 3 probes x SKILL.md and AGENTS.md on Opus, repeated because they sample at temperature 1 (the yaml suggests --repeat 10).
           - suite: behavior
             config: behavior.yaml
-            flags: --repeat 3
-          # 5 tasks x 3 arms x 3 models: the correctness gate and the code-size measurement.
+            flags: --repeat 3 --filter-prompts '^ponytail'
+          # 5 tasks x 3 models: the correctness gate and the code-size measurement.
           - suite: single-shot
             config: promptfooconfig.yaml
-            flags: ""
+            flags: --filter-prompts '^ponytail'
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
@@ -42,6 +44,10 @@ jobs:
 
       - name: Install Python deps for correctness checks
         run: pip install pandas
+
+      # The graders' own tests, with no model calls: a check that can't tell right from wrong fails the job here.
+      - name: Test the eval checks
+        run: node --test tests/behavior.test.js tests/correctness.test.js
 
       # CI reaches the same Anthropic models through OpenRouter: a copy of the config with only the provider ids
       # mapped (claude-opus-4-8 -> anthropic/claude-opus-4.8), next to it so its file:// paths still resolve.
